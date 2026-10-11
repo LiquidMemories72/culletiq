@@ -14,3 +14,5 @@ runs/
 weights/
 *.pt
 !public/models/*.pt
+
+.aws-sam/

@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: CulletIQ inspection evidence API
+Resources:
+  EvidenceBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeletePilotEvidence
+            Status: Enabled
+            ExpirationInDays: 30
+  RecordsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - {AttributeName: sessionId, AttributeType: S}
+        - {AttributeName: sortKey, AttributeType: S}
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+      KeySchema:
+        - {AttributeName: sessionId, KeyType: HASH}
+        - {AttributeName: sortKey, KeyType: RANGE}
+  EvidenceApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 5
+        ThrottlingRateLimit: 2
+      CorsConfiguration:
+        AllowOrigins: ['*']
+        AllowMethods: [POST, OPTIONS]
+        AllowHeaders: [content-type]
+  SaveFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: aws/
+      Handler: handler.handler
+      Runtime: nodejs20.x
+      MemorySize: 256
+      Timeout: 10
+      ReservedConcurrentExecutions: 2
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref RecordsTable
+          BUCKET_NAME: !Ref EvidenceBucket
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [dynamodb:PutItem, dynamodb:UpdateItem]
+              Resource: !GetAtt RecordsTable.Arn
+            - Effect: Allow
+              Action: s3:PutObject
+              Resource: !Sub '${EvidenceBucket.Arn}/inspections/*'
+      Events:
+        Inspections:
+          Type: HttpApi
+          Properties: {ApiId: !Ref EvidenceApi, Path: /inspections, Method: POST}
+        Corrections:
+          Type: HttpApi
+          Properties: {ApiId: !Ref EvidenceApi, Path: /corrections, Method: POST}
+Outputs:
+  ApiUrl:
+    Value: !Sub 'https://${EvidenceApi}.execute-api.${AWS::Region}.amazonaws.com'

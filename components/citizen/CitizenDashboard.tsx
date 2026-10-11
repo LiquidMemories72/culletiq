@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   Camera,
   CheckCircle,
@@ -33,13 +33,12 @@ interface RealInferenceOutput {
 export function CitizenDashboard() {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [inferenceError, setInferenceError] = useState<string | null>(null);
   const [isInferring, setIsInferring] = useState(false);
   const [activeResult, setActiveResult] = useState<RealInferenceOutput | null>(null);
-  const [postalCode, setPostalCode] = useState("110042");
   const [streamScheme, setStreamScheme] = useState<"separate" | "single">("separate");
   const [completedSteps, setCompletedSteps] = useState<Record<number, boolean>>({});
-  const [divertedKg, setDivertedKg] = useState(48.5);
-  const [streakDays, setStreakDays] = useState(14);
+
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -48,6 +47,7 @@ export function CitizenDashboard() {
   // Send real image to FastAPI G4 MobileNetV4 backend
   const runModelInference = async (blob: Blob) => {
     setIsInferring(true);
+    setInferenceError(null);
     const formData = new FormData();
     formData.append("file", blob);
 
@@ -86,21 +86,8 @@ export function CitizenDashboard() {
       });
     } catch (err) {
       console.error("G4 inference error:", err);
-      // Fallback response if offline
-      setActiveResult({
-        category: "container_clear",
-        name: "Clear Container Glass (Flint)",
-        isAccepted: true,
-        confidence: 0.88,
-        abstain: false,
-        meltingPoint: "1,400 °C (Soda-Lime)",
-        chemicalNote: "Standard soda-lime silica packaging glass.",
-        directives: [
-          "Empty and rinse residue.",
-          "Remove plastic or metal caps.",
-          "Deposit into Clear Glass bin."
-        ]
-      });
+      setActiveResult(null);
+      setInferenceError("The classifier is unavailable. Start the FastAPI model server on port 8000, then try again. No decision was made.");
     } finally {
       setIsInferring(false);
     }
@@ -158,23 +145,11 @@ export function CitizenDashboard() {
     }
   };
 
-  // Load a demo household item on first load
-  useEffect(() => {
-    fetch("/demo/citizen/container_clear.jpg")
-      .then((res) => res.blob())
-      .then((blob) => runModelInference(blob))
-      .catch((err) => console.log("Init sample notice:", err));
-  }, []);
-
   const toggleStep = (idx: number) => {
     setCompletedSteps((prev) => ({ ...prev, [idx]: !prev[idx] }));
   };
 
   const markComplete = () => {
-    if (activeResult?.isAccepted) {
-      setDivertedKg((k) => +(k + 0.45).toFixed(2));
-      setStreakDays((s) => s + 1);
-    }
     setCompletedSteps({});
   };
 
@@ -186,38 +161,18 @@ export function CitizenDashboard() {
           <div className="flex items-center gap-3">
             <span className="flex size-3.5 rounded-full bg-sky-400 animate-pulse" />
             <h1 className="text-xl font-bold tracking-tight text-white lg:text-2xl">
-              Citizen Pre-Sorting & Guidance PWA
+              Citizen Glass Guidance
             </h1>
             <span className="rounded-md bg-sky-500/10 px-2 py-0.5 text-xs font-semibold text-sky-400 border border-sky-500/20">
-              YOLO11 GPU Inference (FastAPI :8000)
+              G4 classifier · FastAPI :8000
             </span>
           </div>
           <p className="mt-1 text-xs text-white/60">
-            Scan household glass, verify furnace suitability, prevent batch contamination, and earn civic impact rewards.
+            Scan a household item for model-assisted guidance. Confirm local recycling rules and material with your collector.
           </p>
         </div>
 
-        {/* Civic Impact Stats Tracker */}
-        <div className="flex items-center gap-4 text-xs">
-          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white">
-            <span className="text-white/50 block">Diverted from Landfill</span>
-            <span className="font-semibold text-emerald-400 flex items-center gap-1.5 font-mono text-sm">
-              <Recycle className="size-4" /> {divertedKg} kg
-            </span>
-          </div>
-          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white">
-            <span className="text-white/50 block">CO₂ Saved</span>
-            <span className="font-semibold text-sky-400 flex items-center gap-1.5 font-mono text-sm">
-              <Sparkles className="size-4" /> {(divertedKg * 0.31).toFixed(1)} kg CO₂
-            </span>
-          </div>
-          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white">
-            <span className="text-white/50 block">Streak</span>
-            <span className="font-semibold text-amber-400 flex items-center gap-1.5 font-mono text-sm">
-              <Trophy className="size-4" /> {streakDays} Days
-            </span>
-          </div>
-        </div>
+        <span className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">Model service required · no automatic acceptance when offline</span>
       </div>
 
       {/* Main 2-Column Responsive Layout */}
@@ -291,13 +246,13 @@ export function CitizenDashboard() {
                   className="absolute bottom-4 rounded-full bg-sky-500 px-5 py-2 font-bold text-black shadow-lg hover:bg-sky-400 active:scale-95 transition-all flex items-center gap-2"
                 >
                   <Camera className="size-4" />
-                  {isInferring ? "Analyzing with GPU..." : "Snap & Classify Item"}
+                  {isInferring ? "Analysing image…" : "Snap & Classify Item"}
                 </button>
               )}
 
-              {cameraError && (
+              {(cameraError || inferenceError) && (
                 <div className="absolute bottom-2 left-2 right-2 rounded bg-red-950/80 p-2 text-[11px] text-red-300 border border-red-500/40 text-center">
-                  {cameraError}
+                  {cameraError || inferenceError}
                 </div>
               )}
             </div>
@@ -338,13 +293,7 @@ export function CitizenDashboard() {
           <div className="mt-4 border-t border-white/10 pt-3 flex items-center justify-between text-xs text-white">
             <div className="flex items-center gap-2 text-white/70">
               <MapPin className="size-3.5 text-sky-400" />
-              <span>Municipal Rules:</span>
-              <input
-                type="text"
-                value={postalCode}
-                onChange={(e) => setPostalCode(e.target.value)}
-                className="w-20 rounded bg-white/10 px-2 py-0.5 font-mono text-white text-center border border-white/10 focus:outline-none focus:border-sky-400"
-              />
+              <span>Choose your local collection scheme (not verified by postcode)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <button

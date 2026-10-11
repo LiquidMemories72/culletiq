@@ -1,139 +1,81 @@
-# CulletIQ — glass recycling intelligence (prototype)
+# CulletIQ — rebuilt sorting studio
 
-CulletIQ estimates the **visible colour make-up** of a photo of crushed glass (cullet), flags **possible visual anomalies**, rates the **photo's suitability**, and produces an explainable, printable report.
+This upgrade preserves the supplied Next.js application, its G1/G3/G4 model weights, FastAPI inference routes, detailed colour analysis, citizen guidance, sample history, comparison, reports, and model hub. It adds a clearer home page and a visual sorting studio with distinct **whole-item conveyor** and **post-crush free-fall chute** stages. The older dense console remains under `/industrial/advanced`, explicitly marked as a simulation lab.
 
-> **Decision-support prototype — not certified quality control.**
-> This report is an image-based preliminary assessment. Colour proportions represent estimated visible image area, not mass fractions or certified material purity. Visual screening cannot reliably establish chemical composition or guarantee industrial suitability. Verify results using appropriate physical sampling and material-testing methods.
+## Start locally on Windows 11
 
-Everything runs locally in the browser. No accounts, API keys, paid services, cloud resources or language models are used, and the app works offline once dependencies are installed.
+Install Node.js 20+ and Python 3.11 or 3.12. From this directory in Command Prompt:
 
-## Quick start
-
-Requirements: Node.js 22.12+ or 24 (tested with Node 24.13, npm 11).
-
-```bash
-npm install
-npm run dev          # http://localhost:3000
+```bat
+npm ci
+npm run dev
 ```
 
-Production build:
+Open `http://localhost:3000`. For **real G1/G2, G3, and G4 inference**, start the Python service in a second Command Prompt:
 
-```bash
+```bat
+py -3.11 -m venv .venv
+.venv\Scripts\activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m uvicorn server.main:app --host 127.0.0.1 --port 8000
+```
+
+The Python packages include PyTorch and Ultralytics and can take time to download. CPU inference is supported but slower. For RTX acceleration, install an appropriate CUDA-enabled PyTorch build from the official PyTorch selector in the activated venv before installing the remaining dependencies. Verify `http://127.0.0.1:8000/api/v1/health`, then use **Sorting studio → Inspect an image**. The Next.js rewrite in `next.config.ts` proxies `/api/v1/*` to the local Python service; deploying the Next.js frontend alone will not deploy the model server.
+
+## What is real, simulated, and measured
+
+- **Model input:** Upload a JPG, PNG, or WebP (≤10 MB) or select a labelled sample. The frontend sends it to FastAPI. A successful response includes detections, model scores, route evidence, and an annotated image. The new studio sends weak/no detections and possible contaminants to review. It records successful calls locally; demo items do not enter those counts.
+- **Guided demo:** The belt, camera zone, diverter, falling chute, and bins animate in a scripted sequence, marked `DEMO · SIMULATED`. Start, pause/resume, reset, speed and stage controls change the scene state. No physical camera, solenoid, diverter, or scale is connected.
+- **Batch analysis:** `/analyse`, `/samples`, `/compare`, `/insights`, and print reports use the existing deterministic browser image-analysis pipeline and IndexedDB history. This is separate from G1/G3 model-call history shown in the studio.
+- **Citizen guidance:** G4 requires the local FastAPI service. A model error now produces an error and no classification. Its old invented impact counters and clear-glass fallback were removed.
+- **Model hub:** Supplied training logs and metrics have not been independently reproduced. The G3 stats file reports mAP50 = 0.302. Do not present training metrics as field accuracy.
+
+**Critical limitation:** RGB cannot confirm chemical composition or distinguish all visually similar glass, crystal, ceramic, or stone. Segmented pixel area is not mass, certified stream purity, or verified environmental savings. All routes are decision support for an operator.
+
+## AWS evidence integration
+
+This project contains a real AWS write path, but **the stack is not deployed in this workspace**. When configured, the studio sends a resized JPEG and the actual model decision to API Gateway → Lambda → private S3 and DynamoDB. The interface says `AWS saved` only after a successful response. The Lambda stores image evidence for 30 days and decision metadata with a 30-day DynamoDB TTL; IAM permits only S3 PutObject in the inspection prefix and DynamoDB PutItem/UpdateItem on the table. API Gateway rate limit is 2 requests/second, burst 5; Lambda concurrency is capped at 2. The public pilot endpoint has no user authentication, so restrict access and add authentication before handling private third-party photos in production.
+
+Install/configure AWS CLI and AWS SAM CLI, set a small AWS Budget alert, then from the project root:
+
+```bat
+sam validate --template-file template.yaml
+sam build --template-file template.yaml
+sam deploy --guided
+```
+
+Use the returned `ApiUrl` in **Sorting studio → AWS connection**, save it, then make a new model-backed inspection. Verify its item in DynamoDB and its object in S3. Do not show credentials in the demo. AWS account and credentials were unavailable here, so no cloud response or deployment is claimed. The model server remains local unless separately hosted on suitable infrastructure; this AWS template stores evidence and does not host the PyTorch models.
+
+## Validation
+
+```bat
+npm run typecheck
+npm test
+npm run test:aws
 npm run build
-npm start            # http://localhost:3000
+python -m py_compile server/main.py
 ```
 
-Other commands:
+In this workspace, TypeScript, 76 existing tests, AWS handler contract tests, Python syntax, and production Next.js build passed. Full Python model inference, browser visual interaction, SAM validation, and live AWS persistence remain unverified here because model dependencies, a reachable local browser, SAM CLI, and AWS credentials were unavailable.
 
-| Command | What it does |
-| --- | --- |
-| `npm test` | Vitest unit and pipeline tests (76 tests) |
-| `npm run typecheck` | TypeScript check |
-| `npm run demo:generate` | Regenerate the synthetic demo images and `public/demo/manifest.json` |
-| `npm run evaluate` | Run the pipeline on a manifest with ground truth and report error (default: the synthetic demo set) |
+## Three-minute demo sequence
 
-## What it does
+1. **0:00–0:20:** From the home page, explain the two physical stages and why contaminants matter.
+2. **0:20–0:55:** Open Sorting studio. Start the clearly labelled guided demo, pause at the camera, adjust speed, show reject/review, then switch to the free-fall chute and bins.
+3. **0:55–1:45:** With the FastAPI service running, select a whole-item sample or upload a real photo. Show model-online state, annotated detections, route reason and an uncalibrated score. Switch stages and inspect a cullet photo.
+4. **1:45–2:15:** Open `/analyse` and a saved sample report, then citizen guidance or model hub. State that the colour-analysis records and model-call records are separate.
+5. **2:15–2:45:** If AWS is deployed, inspect a new image, show `AWS saved`, and show the corresponding DynamoDB item and private S3 object.
+6. **2:45–3:00:** State the RGB limitation and human-review safeguard.
 
-| View | Purpose |
-| --- | --- |
-| **Dashboard** (`/`) | Sample count, average estimated colour shares, recent analyses and recent inspection flags — all derived from samples saved in this browser. Shows an empty state on a fresh install. |
-| **Analyse** (`/analyse`) | Drag-and-drop or pick a JPEG/PNG/WebP (≤ 15 MB), preview, replace, adjust settings, analyse, save. Includes labelled demonstration images. |
-| **Results** | Colour distribution, classification overlay, fragments/regions, possible anomalies with locations, reliability indicators, prototype inspection findings, and a "How was this calculated?" panel on every section. |
-| **History** (`/samples`) | Open, delete, export (JSON), select two to compare. |
-| **Report** (`/samples/[id]/report`) | Printable report; **Print / Save as PDF** uses the browser's print dialog. JSON export includes images as data URLs. |
-| **Compare** (`/compare`) | Side-by-side shares, B − A differences in percentage points, and comparability caveats. |
-| **Methodology** (`/methodology`) | Algorithm, limitations, what cannot be measured, required physical validation, data sources, deployment path. |
+## Submission write-up draft
 
-## How the analysis works
+**Problem:** Whole unsuitable objects and contaminated or mixed fragments reduce the value of recycled container glass. Operators need visible, explainable first-pass screening at the appropriate point in the physical process.
 
-The pipeline is deterministic TypeScript (`lib/vision`, `lib/analysis`) running in a Web Worker. OpenCV was not used — the equivalent classic algorithms (area resampling, CIELAB conversion, Sobel, Laplacian, flood fill, morphology, connected components, SLIC) are implemented directly so the app needs no native or Python dependencies.
+**Build:** CulletIQ uses separate upstream whole-item detection and downstream fragment segmentation. The rebuilt sorting studio makes movement and route decisions understandable, connects uploaded images to the supplied models, records successful inspections, and directs uncertain cases to a person. The guided motion is labelled as simulation. Detailed browser colour analysis and citizen guidance remain available.
 
-1. **Preprocess** — decode with EXIF orientation, cap at 2048 px, area-average downsample to ≤ 720 px, convert to CIELAB (D65).
-2. **Image quality** — exposure (mean L\*), clipped/crushed pixels, Laplacian-variance focus, lighting variation.
-3. **Background** — model a uniform border colour, flood-fill inward through similar, low-gradient pixels; reject if the border is inconsistent/textured or the candidate covers > 90 % of the frame. Neutral backgrounds are flagged because clear glass transmits them.
-4. **White balance** — if the background is near-neutral, use it as a white reference (von Kries gains, capped, recorded in the result; switchable).
-5. **Colour categorisation** — per pixel by L\*, chroma C\*, hue h: glare (excluded), clear, green, brown/amber, other colour, uncertain (too dark, weak tint, dark-neutral, or near a hue boundary). A relative-chroma rule (C\*/L\*) lets dark glass qualify. Proportions = class pixels ÷ material pixels, so the five classes sum to 100 %.
-6. **Regions / fragments** — SLIC superpixels; when a background was separated, morphology + 8-connected components give approximate fragments (touching pieces merge — reported).
-7. **Screening** — four transparent heuristics (unusual colour, uniform light low-texture, high-contrast neutral, dark featureless). Output is "possible visual anomaly" with location, measured features, the rule that fired and a verification step. Very large matching areas are treated as a probable surface.
-8. **Reliability** — 11–12 indicators graded good / caution / poor → tier (Higher / Moderate / Low / Unsuitable). Not a probability.
-9. **Rules** — configurable prototype inspection rules (`lib/analysis/rules.ts`) → Assessable / Inspect / Unsuitable, each finding with rationale and next step.
+**AWS:** Once deployed, API Gateway, Lambda, private S3, and DynamoDB store model-backed inspection evidence and decisions. Show a successful write in the video. If it is not deployed, say so rather than implying AWS usage was demonstrated.
 
-All thresholds live in `lib/vision/config.ts` and `lib/analysis/rules.ts`. They are uncalibrated starting values; the brown/green hue boundary was sanity-checked on two hand-sorted real photos only.
+**Tools and attribution:** ChatGPT Codex contributed to this upgrade. The supplied ZIP contained the model code and weights; verify their original training date, dataset provenance, reuse rights, and licences before publication. `public/demo/real/ATTRIBUTION.md` credits Alter Fritz’s CC BY-SA 3.0 photographs. The supplied archive has October 11 timestamps but no Git history; do not claim eligibility without truthful verification of when qualifying project work began. The official hackathon rules exclude projects begun before October 8 even if rewritten.
 
-## Demonstration images
-
-`public/demo/manifest.json` lists every demo image with its description and known limitations.
-
-- **Synthetic scenes** (`public/demo/synthetic-*.jpg`) are drawn by `lib/demo/synthetic.ts`: they are not photographs. Their ground truth is the drawn pixel area per class, which is exact for the drawing and says nothing about real-world accuracy.
-- **Real photographs** (`public/demo/real/`) are five photos of hand-sorted cullet by *Alter Fritz* (Wikimedia Commons, **CC BY-SA 3.0**; see `public/demo/real/ATTRIBUTION.md`). They have **no measured composition**; the uploader's labels are shown as illustrative expectations only. Two of them informed the hue boundary, so they are not held out.
-
-## Evaluating on held-out images
-
-No measured ground truth ships with this repository, so **no accuracy claim is made**. To evaluate properly:
-
-1. **Collect data.** For each photo, take the photographed material (or a documented representative split of it), hand-sort by colour (clear / green / brown), weigh each fraction, and record mass percentages. Photograph under a fixed rig (camera, lighting, background, ideally a grey card). Keep a held-out set that is never used to tune thresholds.
-2. **Write a manifest** (schema: `lib/demo/manifest.ts`), e.g. `data/heldout.json`:
-
-   ```json
-   {
-     "description": "Plant A, batch photos May 2026, hand-sorted and weighed",
-     "items": [
-       {
-         "id": "batch-001",
-         "title": "Batch 001",
-         "file": "images/batch-001.jpg",
-         "synthetic": false,
-         "description": "Top view, 2 kg split, blue tray",
-         "limitations": "",
-         "groundTruth": { "kind": "physical-mass", "percent": { "clear": 52.1, "green": 30.4, "brown": 17.5 } }
-       }
-     ]
-   }
-   ```
-
-   `file` is relative to the manifest. Use `"kind": "annotated-area"` if you instead hand-annotated pixel areas.
-3. **Run** `npm run evaluate -- --manifest data/heldout.json`. The script decodes each PNG/JPEG, runs the same pipeline as the app, renormalises the estimate over clear/green/brown (other and uncertain are dropped), and prints per-image estimates, per-class **MAE** and **bias** in percentage points and the maximum absolute error. Images whose estimate is unusable (unsuitable photo) are counted separately, not silently dropped. Results are saved to `evaluation-results.json`.
-4. **Interpret carefully.** With mass ground truth, the error mixes algorithm error with the area-vs-mass gap (thickness, density, overlap, hidden layers). Report the spread, not just the mean, and the share of images rated unsuitable. A small held-out set gives wide uncertainty.
-
-Current output on the synthetic demo set (drawings only, not evidence of real-world performance): MAE ≈ 6.0 / 3.9 / 2.1 pp for clear / green / brown, one of five images correctly rated unsuitable.
-
-## Project structure
-
-```
-app/                     Next.js App Router pages (dashboard, analyse, samples, report, compare, methodology)
-components/              UI: shell, primitives, charts, analyse workflow, results, history, report
-lib/vision/              colour spaces, preprocessing, quality, background, white balance,
-                         classification, SLIC regions, fragments, anomaly screening, reliability, overlay
-lib/analysis/            pipeline orchestration, rules engine, worker + executor, comparison, evaluation metrics
-lib/storage/             SampleRepository / ImageStore interfaces, IndexedDB + in-memory implementations, service
-lib/reports/             report model, JSON export, methodology text and disclaimer
-lib/demo/                synthetic scene generator, real-photo metadata, manifest schema
-types/                   analysis and sample schemas
-scripts/                 generate-demo.ts, evaluate.ts
-tests/                   Vitest suites
-public/demo/             demo images + manifest (+ real/ATTRIBUTION.md)
-```
-
-## Architecture and a future AWS path
-
-Three interfaces separate the app from infrastructure:
-
-- `ImageStore` and `SampleRepository` (`lib/storage/types.ts`) — implemented today with IndexedDB (browser) and memory (tests).
-- `AnalysisExecutor` (`lib/analysis/executor.ts`) — implemented today with a Web Worker (falls back to the main thread).
-
-A cloud deployment could add, without changing the UI or pipeline:
-
-- **Amazon S3** for images (an `ImageStore` that uploads via pre-signed URLs and stores object keys).
-- **AWS Lambda** (Node.js runtime) or a container service running `runPipeline` from `lib/analysis/pipeline.ts` (a remote `AnalysisExecutor`).
-- **Amazon DynamoDB** for `SampleRecord` metadata and history (a `SampleRepository` behind an authenticated API).
-- Frontend hosting on any Next.js-capable host (e.g. AWS Amplify Hosting) or as a static export.
-
-None of these integrations exist in the code; nothing AWS-related is required or stubbed. No `.env` configuration is needed.
-
-## Limitations
-
-- Area, not mass; top layer only; no scale reference.
-- Clear glass on neutral backgrounds is unreliable (flagged). Thick dark glass under top lighting is often near-black and becomes "uncertain".
-- Anomaly screening is heuristic: expect false positives (glints, overlapping clear glass) and false negatives (the €1 coin in the real demo photos is not flagged; clear plastic and white ceramic on white are not detectable).
-- Thresholds are uncalibrated; reliability tiers are rule-based, not probabilities.
-- Data stays in one browser's IndexedDB; clearing site data deletes history.
+`REFERENCE_README.md` preserves the original prototype documentation for comparison. `IMPLEMENTATION_STATUS.md` records current verification and limitations.

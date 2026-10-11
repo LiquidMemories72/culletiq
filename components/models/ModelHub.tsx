@@ -134,6 +134,9 @@ export function ModelHub() {
 
   return (
     <div className="space-y-6 p-4 lg:p-8">
+      <div className="rounded-lg border border-amber-400/40 bg-amber-50 p-3 text-xs text-amber-900">
+        Training metrics below come from supplied JSON logs and have not been independently reproduced here. Confusion matrices and timing illustrations are not proof of field performance. Test the weights on held-out real material before automation.
+      </div>
       {/* Title Header */}
       <div className="flex flex-col gap-4 rounded-xl border border-white/10 bg-gradient-to-r from-charcoal via-surface to-charcoal p-5 shadow-2xl lg:flex-row lg:items-center lg:justify-between">
         <div>
@@ -147,7 +150,7 @@ export function ModelHub() {
             </span>
           </div>
           <p className="mt-1 text-xs text-white/60">
-            Validated Deep Learning Architectures, Autonomous Training Iterations, and Physics-Based Actuation Timings.
+            Supplied model specifications, training logs, and illustrative optical timing.
           </p>
         </div>
 

@@ -246,6 +246,8 @@ async def classify_cullet(
     else:
         raise HTTPException(status_code=400, detail="No image provided")
 
+    if len(img_bytes) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Image exceeds 10 MB")
     nparr = np.frombuffer(img_bytes, np.uint8)
     img_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     if img_bgr is None:
@@ -393,6 +395,8 @@ async def classify_whole_item(
     else:
         raise HTTPException(status_code=400, detail="No image provided")
 
+    if len(img_bytes) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Image exceeds 10 MB")
     nparr = np.frombuffer(img_bytes, np.uint8)
     img_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     if img_bgr is None:
@@ -536,6 +540,8 @@ async def classify_citizen(
 
     # Load PIL image
     try:
+        if len(img_bytes) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="Image exceeds 10 MB")
         pil_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
     except Exception:
         raise HTTPException(status_code=400, detail="Could not open image")
@@ -701,9 +707,9 @@ def get_model_metrics():
     """
     return {
         "hardware": {
-            "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "NVIDIA GeForce RTX 5060 Laptop GPU",
-            "vram_gb": 8.0,
-            "driver": "CUDA 12.8 / PyTorch 2.6+",
+            "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU",
+            "vram_gb": round(torch.cuda.get_device_properties(0).total_memory / (1024 ** 3), 2) if torch.cuda.is_available() else 0,
+            "driver": torch.version.cuda if torch.cuda.is_available() else "CPU only",
             "framework": "PyTorch + Ultralytics + timm + ONNX Runtime"
         },
         "models": {

@@ -7,12 +7,13 @@ import { Activity, BookOpen, Cpu, Gauge, GitCompareArrows, History, LayoutDashbo
 import { cx } from "./ui";
 
 const NAV = [
-  { href: "/", label: "Overview", icon: LayoutDashboard },
-  { href: "/industrial", label: "Industrial Sorter", icon: Activity },
-  { href: "/citizen", label: "Citizen Pre-Sort", icon: Smartphone },
-  { href: "/models", label: "Model Hub & AutoML", icon: Cpu },
-  { href: "/analyse", label: "Analyse Sample", icon: ScanSearch },
-  { href: "/samples", label: "Sample History", icon: History },
+  { href: "/", label: "Start here", icon: LayoutDashboard },
+  { href: "/insights", label: "Batch insights", icon: Gauge },
+  { href: "/industrial", label: "Sorting studio", icon: Activity },
+  { href: "/citizen", label: "Citizen guide", icon: Smartphone },
+  { href: "/models", label: "Models & training", icon: Cpu },
+  { href: "/analyse", label: "Analyse a batch", icon: ScanSearch },
+  { href: "/samples", label: "Saved samples", icon: History },
   { href: "/compare", label: "Compare", icon: GitCompareArrows },
   { href: "/methodology", label: "Methodology", icon: BookOpen },
 ];

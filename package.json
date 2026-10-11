@@ -2,7 +2,7 @@
   "name": "culletiq",
   "version": "0.1.0",
   "private": true,
-  "description": "CulletIQ — image-based glass cullet colour estimation and visual screening prototype",
+  "description": "CulletIQ \u2014 image-based glass cullet colour estimation and visual screening prototype",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "demo:generate": "tsx scripts/generate-demo.ts",
-    "evaluate": "tsx scripts/evaluate.ts"
+    "evaluate": "tsx scripts/evaluate.ts",
+    "test:aws": "node --test tests/backend.test.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.55.0",
