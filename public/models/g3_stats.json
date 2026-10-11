@@ -1,0 +1,20 @@
+{
+  "model_id": "G3",
+  "name": "Pre-Crush Whole-Item Detector",
+  "architecture": "YOLO11s (Object Detection)",
+  "parameters_m": 9.4,
+  "classes": [
+    "container_clear",
+    "container_amber",
+    "container_green",
+    "borosilicate_cookware",
+    "ceramic_tableware",
+    "drinking_glass_or_crystal",
+    "mirror_or_window",
+    "not_glass"
+  ],
+  "map50": 0.302,
+  "map50_95": 0.1989,
+  "weights_path": "D:\\PIYUSH\\dtu\\aws kack\\public\\models\\g3_yolo11_best.pt",
+  "onnx_path": "D:\\PIYUSH\\dtu\\aws kack\\public\\models\\g3_yolo11_detector.onnx"
+}

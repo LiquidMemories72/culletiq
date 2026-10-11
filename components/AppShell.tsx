@@ -3,13 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { BookOpen, GitCompareArrows, History, LayoutDashboard, Menu, ScanSearch, X } from "lucide-react";
+import { Activity, BookOpen, Cpu, Gauge, GitCompareArrows, History, LayoutDashboard, Menu, ScanSearch, Smartphone, X } from "lucide-react";
 import { cx } from "./ui";
 
 const NAV = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/analyse", label: "Analyse sample", icon: ScanSearch },
-  { href: "/samples", label: "Sample history", icon: History },
+  { href: "/", label: "Overview", icon: LayoutDashboard },
+  { href: "/industrial", label: "Industrial Sorter", icon: Activity },
+  { href: "/citizen", label: "Citizen Pre-Sort", icon: Smartphone },
+  { href: "/models", label: "Model Hub & AutoML", icon: Cpu },
+  { href: "/analyse", label: "Analyse Sample", icon: ScanSearch },
+  { href: "/samples", label: "Sample History", icon: History },
   { href: "/compare", label: "Compare", icon: GitCompareArrows },
   { href: "/methodology", label: "Methodology", icon: BookOpen },
 ];

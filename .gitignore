@@ -7,3 +7,10 @@ next-env.d.ts
 .env*
 !.env.example
 evaluation-results*.json
+__pycache__/
+*.pyc
+datasets/
+runs/
+weights/
+*.pt
+!public/models/*.pt

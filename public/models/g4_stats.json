@@ -1,0 +1,21 @@
+{
+  "model_id": "G4",
+  "name": "Citizen Phone Classifier",
+  "architecture": "MobileNetV4-Conv-Small",
+  "parameters_m": 3.8,
+  "input_resolution": "224x224",
+  "classes": [
+    "borosilicate_cookware",
+    "ceramic_tableware",
+    "container_amber",
+    "container_clear",
+    "container_green",
+    "drinking_glass_or_crystal",
+    "mirror_or_window",
+    "not_glass"
+  ],
+  "peak_val_accuracy": 0.8154,
+  "abstain_threshold": 0.7,
+  "weights_path": "D:\\PIYUSH\\dtu\\aws kack\\public\\models\\g4_mobilenetv4_best.pt",
+  "onnx_path": "D:\\PIYUSH\\dtu\\aws kack\\public\\models\\g4_mobilenetv4.onnx"
+}

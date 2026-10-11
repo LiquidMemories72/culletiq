@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Database, ScanSearch, ShieldAlert } from "lucide-react";
+import { Activity, ArrowRight, Cpu, Database, ScanSearch, ShieldAlert, Smartphone, Wind, Zap } from "lucide-react";
 import { computeDashboardStats } from "@/lib/analysis/compare";
 import { useSampleRecords } from "@/lib/hooks";
 import { AveragesChart } from "@/components/charts/AveragesChart";
@@ -26,18 +26,87 @@ export function Dashboard() {
   const usable = records?.filter((r) => r.result.colour.valid && r.result.reliability.tier !== "unsuitable") ?? [];
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         eyebrow="Dashboard"
-        title="Cullet sample overview"
-        description="Statistics derived from samples saved in this browser. All colour figures are estimated visible image area — not mass."
+        title="Glass Recycling Intelligence Platform"
+        description="Vision-Only Deep Learning & Real-Time Sorter Telemetry for Closed-Loop Container Remelting."
         actions={
-          <LinkButton href="/analyse" variant="primary">
-            <ScanSearch aria-hidden className="size-4" />
-            Analyse new sample
-          </LinkButton>
+          <div className="flex flex-wrap gap-2">
+            <LinkButton href="/industrial" variant="primary">
+              <Activity aria-hidden className="size-4" />
+              Industrial Console
+            </LinkButton>
+            <LinkButton href="/citizen">
+              <Smartphone aria-hidden className="size-4" />
+              Citizen Pre-Sort
+            </LinkButton>
+          </div>
         }
       />
+
+      {/* 3-Tier Enterprise Architecture Banner */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Link
+          href="/industrial"
+          className="group rounded-xl border border-sky-500/30 bg-gradient-to-br from-charcoal to-surface p-5 shadow-lg transition-all hover:border-sky-400 hover:shadow-sky-500/10"
+        >
+          <div className="flex items-center justify-between">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400 group-hover:bg-sky-500/20">
+              <Activity className="size-5" />
+            </span>
+            <span className="flex items-center gap-1 text-xs font-semibold text-sky-400">
+              Live Sorter <ArrowRight className="size-3 transition-transform group-hover:translate-x-1" />
+            </span>
+          </div>
+          <h3 className="mt-3 text-base font-bold text-white group-hover:text-sky-300">
+            Industrial Sorter Console
+          </h3>
+          <p className="mt-1 text-xs text-white/60 leading-relaxed">
+            High-speed line-scan stream (10.2 kHz), 256 pneumatic solenoid valves heatmap, live stream purity, and refractory emergency pauses.
+          </p>
+        </Link>
+
+        <Link
+          href="/citizen"
+          className="group rounded-xl border border-emerald-500/30 bg-gradient-to-br from-charcoal to-surface p-5 shadow-lg transition-all hover:border-emerald-400 hover:shadow-emerald-500/10"
+        >
+          <div className="flex items-center justify-between">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20">
+              <Smartphone className="size-5" />
+            </span>
+            <span className="flex items-center gap-1 text-xs font-semibold text-emerald-400">
+              WebRTC PWA <ArrowRight className="size-3 transition-transform group-hover:translate-x-1" />
+            </span>
+          </div>
+          <h3 className="mt-3 text-base font-bold text-white group-hover:text-emerald-300">
+            Citizen Pre-Sort & Guidance
+          </h3>
+          <p className="mt-1 text-xs text-white/60 leading-relaxed">
+            In-browser MobileNetV4 camera scanner, 70% confidence abstain rule, step-by-step prep actions, and municipal bin verification.
+          </p>
+        </Link>
+
+        <Link
+          href="/models"
+          className="group rounded-xl border border-purple-500/30 bg-gradient-to-br from-charcoal to-surface p-5 shadow-lg transition-all hover:border-purple-400 hover:shadow-purple-500/10"
+        >
+          <div className="flex items-center justify-between">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20">
+              <Cpu className="size-5" />
+            </span>
+            <span className="flex items-center gap-1 text-xs font-semibold text-purple-400">
+              RTX 5060 <ArrowRight className="size-3 transition-transform group-hover:translate-x-1" />
+            </span>
+          </div>
+          <h3 className="mt-3 text-base font-bold text-white group-hover:text-purple-300">
+            Model Hub & AutoML Suite
+          </h3>
+          <p className="mt-1 text-xs text-white/60 leading-relaxed">
+            G1–G4 deep learning specifications, automated training loop, 6×6 confusion matrix, and optical delay physics calculator.
+          </p>
+        </Link>
+      </div>
 
       {error && (
         <Notice tone="blocking" className="mb-6" title="Could not read saved samples">

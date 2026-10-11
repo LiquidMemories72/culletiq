@@ -1,0 +1,271 @@
+{
+  "ready": true,
+  "timestamp": "2026-10-10T17:49:56Z",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "vram_gb": 7.96,
+    "framework": "PyTorch 2.11.0+cu130 + Ultralytics YOLO11"
+  },
+  "model_summary": {
+    "name": "CulletIQ-YOLO11s-Seg-V1",
+    "architecture": "YOLO11s-seg (Instance Segmentation)",
+    "classes": {
+      "0": "flint",
+      "1": "amber",
+      "2": "green",
+      "3": "other_colour",
+      "4": "csp",
+      "5": "other_contaminant"
+    },
+    "input_resolution": "640x640 / 1280x1280 line-scan tile",
+    "parameters_m": 10.1,
+    "gflops": 35.5,
+    "latency_ms_rtx5060": 2.4,
+    "latency_ms_edge_orin": 6.8,
+    "overall_map50": 0.9342,
+    "overall_map50_95": 0.7258,
+    "box_map50": 0.9739
+  },
+  "per_class_metrics": {
+    "flint": {
+      "precision": 0.9382,
+      "recall": 0.8895,
+      "f1": 0.9132
+    },
+    "amber": {
+      "precision": 0.9558,
+      "recall": 0.9034,
+      "f1": 0.9289
+    },
+    "green": {
+      "precision": 0.9284,
+      "recall": 0.8519,
+      "f1": 0.8885
+    },
+    "other_colour": {
+      "precision": 0.8971,
+      "recall": 0.875,
+      "f1": 0.8859
+    },
+    "csp": {
+      "precision": 0.9564,
+      "recall": 0.9,
+      "f1": 0.9273
+    },
+    "other_contaminant": {
+      "precision": 0.9392,
+      "recall": 0.8596,
+      "f1": 0.8976
+    }
+  },
+  "confusion_matrix": {
+    "labels": [
+      "flint",
+      "amber",
+      "green",
+      "other_colour",
+      "csp",
+      "other_contaminant"
+    ],
+    "matrix_percent": [
+      [
+        94.2,
+        1.8,
+        2.1,
+        0.5,
+        0.8,
+        0.6
+      ],
+      [
+        1.2,
+        93.4,
+        3.2,
+        1.1,
+        0.7,
+        0.4
+      ],
+      [
+        1.8,
+        2.9,
+        92.8,
+        1.4,
+        0.6,
+        0.5
+      ],
+      [
+        1.5,
+        2.1,
+        1.8,
+        91.5,
+        1.8,
+        1.3
+      ],
+      [
+        0.8,
+        1.2,
+        0.9,
+        1.2,
+        92.4,
+        3.5
+      ],
+      [
+        0.5,
+        0.7,
+        0.6,
+        1.1,
+        2.9,
+        94.2
+      ]
+    ],
+    "key_safeguards": {
+      "amber_in_flint_percent": 0.42,
+      "csp_leakage_percent": 0.08,
+      "pyrex_abstain_rate": 0.94
+    }
+  },
+  "optical_geometry": {
+    "chute_width_mm": 1200,
+    "linear_sensor_pixels": 4096,
+    "pixel_pitch_mm": 0.293,
+    "belt_velocity_mps": 3.0,
+    "line_rate_khz": 10.2,
+    "transit_distance_mm": 1200,
+    "transit_delay_ms": 400.0,
+    "valve_count": 256,
+    "valve_pitch_mm": 4.69,
+    "valve_pulse_duration_ms": 3.5,
+    "valve_pressure_mpa": 0.7
+  },
+  "model_cards": {
+    "G1": {
+      "id": "G1",
+      "name": "Cullet Fragment Segmenter",
+      "backbone": "YOLO11s-seg",
+      "role": "High-speed free-fall chute instance segmentation & mask generation",
+      "input": "1280x1280 dual-tile line-scan RGB",
+      "classes": 6,
+      "latency_ms": 2.4,
+      "mAP50": 0.9342,
+      "mAP50_95": 0.7258
+    },
+    "G2": {
+      "id": "G2",
+      "name": "Crop Verifier & CSP Classifier",
+      "backbone": "EfficientNet-B0 (6-channel stem)",
+      "role": "Paired transmission + 45\u00b0 specular reflection verification",
+      "input": "6x128x128 registered crop (back-lit + front-lit)",
+      "classes": 6,
+      "latency_ms": 1.1,
+      "accuracy": 0.962
+    },
+    "G3": {
+      "id": "G3",
+      "name": "Pre-Crush Whole-Item Detector",
+      "backbone": "YOLO11s (Object Detection)",
+      "role": "Intake conveyor screening for Pyrex, lead crystal, cookware",
+      "input": "960x960 area-scan RGB",
+      "classes": 9,
+      "latency_ms": 3.2,
+      "mAP50": 0.884
+    },
+    "G4": {
+      "id": "G4",
+      "name": "Citizen Phone Classifier",
+      "backbone": "MobileNetV4-Conv-Small",
+      "role": "In-browser / PWA resident guidance with 70% abstain policy",
+      "input": "224x224 center-crop RGB",
+      "classes": 8,
+      "latency_ms_web": 0.8,
+      "top1_accuracy": 0.931,
+      "abstain_threshold": 0.7
+    }
+  },
+  "iteration_history": [
+    {
+      "iteration": 1,
+      "mask_map50": 0.7999,
+      "mask_map50_95": 0.5643,
+      "box_map50": 0.9057,
+      "per_class": {
+        "flint": {
+          "precision": 0.9268,
+          "recall": 0.8002,
+          "f1": 0.8589
+        },
+        "amber": {
+          "precision": 0.9135,
+          "recall": 0.8049,
+          "f1": 0.8557
+        },
+        "green": {
+          "precision": 0.9482,
+          "recall": 0.789,
+          "f1": 0.8613
+        },
+        "other_colour": {
+          "precision": 0.8531,
+          "recall": 0.612,
+          "f1": 0.7127
+        },
+        "csp": {
+          "precision": 0.9285,
+          "recall": 0.75,
+          "f1": 0.8297
+        },
+        "other_contaminant": {
+          "precision": 0.9098,
+          "recall": 0.5926,
+          "f1": 0.7177
+        }
+      },
+      "best_weights": "D:\\PIYUSH\\dtu\\aws kack\\runs\\cullet\\cullet_iter_1\\weights\\best.pt",
+      "csp_recall": 0.75,
+      "amber_recall": 0.8049,
+      "green_recall": 0.789,
+      "flint_recall": 0.8002
+    },
+    {
+      "iteration": 2,
+      "mask_map50": 0.9342,
+      "mask_map50_95": 0.7258,
+      "box_map50": 0.9739,
+      "per_class": {
+        "flint": {
+          "precision": 0.9382,
+          "recall": 0.8895,
+          "f1": 0.9132
+        },
+        "amber": {
+          "precision": 0.9558,
+          "recall": 0.9034,
+          "f1": 0.9289
+        },
+        "green": {
+          "precision": 0.9284,
+          "recall": 0.8519,
+          "f1": 0.8885
+        },
+        "other_colour": {
+          "precision": 0.8971,
+          "recall": 0.875,
+          "f1": 0.8859
+        },
+        "csp": {
+          "precision": 0.9564,
+          "recall": 0.9,
+          "f1": 0.9273
+        },
+        "other_contaminant": {
+          "precision": 0.9392,
+          "recall": 0.8596,
+          "f1": 0.8976
+        }
+      },
+      "best_weights": "D:\\PIYUSH\\dtu\\aws kack\\runs\\cullet\\cullet_iter_2\\weights\\best.pt",
+      "csp_recall": 0.9,
+      "amber_recall": 0.9034,
+      "green_recall": 0.8519,
+      "flint_recall": 0.8895
+    }
+  ]
+}

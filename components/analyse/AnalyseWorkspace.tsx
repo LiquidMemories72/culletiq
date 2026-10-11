@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { AlertOctagon, CheckCircle2, FileText, Loader2, Save, ScanSearch } from "lucide-react";
+import { AlertOctagon, CheckCircle2, Cpu, FileText, Loader2, Save, ScanSearch } from "lucide-react";
 import type { AnalysisResult } from "@/types/analysis";
 import type { SampleRecord } from "@/types/sample";
 import type { ManifestItem } from "@/lib/demo/manifest";
@@ -55,6 +55,9 @@ export function AnalyseWorkspace() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState<SampleRecord | null>(null);
+  const [rawFile, setRawFile] = useState<File | null>(null);
+  const [gpuResult, setGpuResult] = useState<any | null>(null);
+  const [isGpuInferring, setIsGpuInferring] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<string | null>(null);
 
@@ -78,6 +81,8 @@ export function AnalyseWorkspace() {
       if (previewRef.current) URL.revokeObjectURL(previewRef.current);
       previewRef.current = d.previewUrl;
       setDecoded(d);
+      setRawFile(file);
+      setGpuResult(null);
       setFileInfo({ name: file.name, type: file.type, size: file.size });
       setDemo(demoItem);
       setName(demoItem ? demoItem.title : file.name.replace(/\.[^.]+$/, ""));
@@ -85,6 +90,37 @@ export function AnalyseWorkspace() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "The image could not be read.");
       setPhase(decoded ? "ready" : "error");
+    }
+  }
+
+  async function runGpuYolo() {
+    if (!rawFile) return;
+    setIsGpuInferring(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", rawFile);
+      const res = await fetch("/api/v1/classify/image", {
+        method: "POST",
+        body: formData,
+      });
+      let data;
+      if (res.ok) {
+        data = await res.json();
+      } else {
+        const directRes = await fetch("http://127.0.0.1:8000/api/v1/classify/image", {
+          method: "POST",
+          body: formData,
+        });
+        if (!directRes.ok) throw new Error("GPU Inference service unavailable on port 8000");
+        data = await directRes.json();
+      }
+      setGpuResult(data);
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "GPU inference failed. Ensure backend server is running.");
+    } finally {
+      setIsGpuInferring(false);
     }
   }
 
@@ -214,6 +250,20 @@ export function AnalyseWorkspace() {
                 )}
                 {phase === "decoding" ? "Reading image…" : phase === "analysing" ? "Analysing…" : phase === "done" ? "Analyse again" : "Analyse sample"}
               </Button>
+
+              <Button
+                variant="secondary"
+                className="w-full border-sky-500/40 text-sky-400 hover:bg-sky-500/10 font-semibold"
+                onClick={runGpuYolo}
+                disabled={!rawFile || busy || isGpuInferring}
+              >
+                {isGpuInferring ? (
+                  <Loader2 aria-hidden className="size-4 animate-spin text-sky-400" />
+                ) : (
+                  <Cpu aria-hidden className="size-4 text-sky-400" />
+                )}
+                {isGpuInferring ? "Running YOLO11 on RTX 5060..." : "Run YOLO11-Seg (GPU Accelerated)"}
+              </Button>
               <SettingsPanel value={settings} onChange={setSettings} />
             </div>
           </Card>
@@ -229,6 +279,75 @@ export function AnalyseWorkspace() {
           </Card>
         </div>
       </div>
+
+      {gpuResult && (
+        <div ref={resultsRef} className="mt-8 rounded-xl border border-sky-500/40 bg-charcoal p-6 shadow-2xl">
+          <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-4 gap-3">
+            <div>
+              <span className="rounded bg-sky-500/20 px-2.5 py-0.5 text-xs font-bold text-sky-300 font-mono">
+                YOLO11s-Seg Deep Learning (RTX 5060)
+              </span>
+              <h3 className="text-xl font-bold text-white mt-1">GPU Neural Instance Segmentation</h3>
+              <p className="text-xs text-white/60">
+                Inference Latency: {gpuResult.inference_ms} ms · Device: {gpuResult.device} · Resolution: {gpuResult.image_dimensions?.[0]}×{gpuResult.image_dimensions?.[1]} px
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-white/5 px-3 py-1.5 text-center border border-white/10">
+                <span className="text-[10px] text-white/50 block">Stream Purity</span>
+                <span className="font-mono font-bold text-emerald-400 text-base">{gpuResult.stream_purity_percent}%</span>
+              </div>
+              <div className="rounded-lg bg-white/5 px-3 py-1.5 text-center border border-white/10">
+                <span className="text-[10px] text-white/50 block">Total Detections</span>
+                <span className="font-mono font-bold text-sky-400 text-base">{gpuResult.total_detections}</span>
+              </div>
+              <div className="rounded-lg bg-red-950/20 px-3 py-1.5 text-center border border-red-500/30">
+                <span className="text-[10px] text-red-300/60 block">CSP Inclusions</span>
+                <span className="font-mono font-bold text-red-400 text-base">{gpuResult.csp_defect_count}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+            <div className="rounded-lg overflow-hidden border border-white/10 bg-black flex items-center justify-center">
+              <img
+                src={gpuResult.annotated_image}
+                alt="YOLO11 Segmented Output"
+                className="w-full max-h-[460px] object-contain"
+              />
+            </div>
+
+            <div className="space-y-4 text-xs text-white">
+              <h4 className="font-bold uppercase tracking-wider text-white/70">Measured Material Proportions</h4>
+              <div className="space-y-2.5">
+                {Object.entries(gpuResult.proportions || {}).map(([cname, pct]: [string, any]) => (
+                  <div key={cname} className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="capitalize font-semibold text-white/80">{cname}</span>
+                      <span className="font-mono text-white font-bold">{pct}%</span>
+                    </div>
+                    <div className="h-2.5 w-full rounded-full bg-white/10 overflow-hidden">
+                      <div
+                        style={{ width: `${pct}%` }}
+                        className={`h-full rounded-full ${
+                          cname === "csp" ? "bg-red-500" : cname === "flint" ? "bg-sky-400" : cname === "amber" ? "bg-amber-400" : "bg-emerald-400"
+                        }`}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {gpuResult.csp_defect_count > 0 && (
+                <div className="rounded-lg border border-red-500/40 bg-red-950/30 p-3 text-red-200">
+                  <span className="font-bold">⚠️ Refractory Hazard Flagged: </span>
+                  {gpuResult.csp_defect_count} non-fusible ceramic/stone inclusion(s) detected. Reject before melting to avoid bottle rupture defects.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {output && (
         <div ref={resultsRef} className="mt-10 scroll-mt-20">
